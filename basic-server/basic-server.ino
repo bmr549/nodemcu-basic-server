@@ -10,6 +10,7 @@
 // ---- MODIFIABLE CONSTANTS ----
 const char * ssid = "LU-IoT2"; // put your ssid (network name) here
 const char * password = "CSC49008"; // put your network password here
+#define LED_PIN 16 // pin your led is on
 
 // ---- UNMODIFIABLE CONSTANTS ----
 WiFiServer myServer(80); // parameter is the server port
@@ -23,6 +24,8 @@ void setup() {
   Serial.begin(9600);
   connectToWifi(ssid, password);
   myServer.begin();
+
+  pinMode(LED_PIN, OUTPUT);
 
 }
 
@@ -50,7 +53,7 @@ void loop() {
             nextClient.println("Connection: close");
             nextClient.println();
             nextClient.stop(); // disconnect from the client
-            Serial.println("Client Disconnected");
+            //Serial.println("Client Disconnected");
           } else {
 
             // put one line of the request into clientRequest
@@ -61,8 +64,13 @@ void loop() {
             // values that we added to the url, such as "value=0" put
             // after the url in "192.168.x.x/value=0"
             if (clientRequest.startsWith("GET")) {
-              Serial.println("Command Type: GET");
-              Serial.println(clientRequest.substring(3));
+              //Serial.println("Command Type: GET");
+              String requestValue = clientRequest.substring(3);
+              requestValue.trim();
+              int HTTPIndex = requestValue.indexOf("HTTP/1.1");
+              requestValue = requestValue.substring(1, HTTPIndex);
+              //Serial.println(requestValue);
+              handleRequest(requestValue);
             }
             
           }
@@ -90,4 +98,33 @@ void connectToWifi(String ssid, String key) {
     Serial.print('.');
   }
   Serial.print("\nYour IP Address is: "); Serial.println(WiFi.localIP());
+}
+
+/*
+ * Handle Request
+ */
+void handleRequest(String request) {
+  request.trim();
+  request.toLowerCase();
+  //Serial.print("Request: "); Serial.println(request);
+  if (request.equals("on")) {
+    changeLEDState(1);
+  } else if (request.equals("off")) {
+    changeLEDState(0);
+  }
+  Serial.print("Command: "); Serial.println(request);
+}
+
+/*
+ * Change LED State
+ */
+void changeLEDState(int state) {
+  switch (state) {
+    case 0:
+      digitalWrite(LED_PIN, LOW);
+      break;
+    case 1:
+      digitalWrite(LED_PIN, HIGH);
+      break;
+  }
 }
