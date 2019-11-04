@@ -1,6 +1,9 @@
-/*
+ /*
  * Basic Web Server on NodeMCU
  * 
+ * 
+ * 4 November 2019
+ * By Brenden Roland
  * 
  */
 
@@ -11,10 +14,10 @@
 const char * ssid = "LU-IoT2"; // put your ssid (network name) here
 const char * password = "CSC49008"; // put your network password here
 #define LED_PIN 16 // pin your led is on
+#define LED_SENSE 5 // pin for led sensing
 
 // ---- UNMODIFIABLE CONSTANTS ----
 WiFiServer myServer(80); // parameter is the server port
-
 
 /*
  * Setup
@@ -26,11 +29,14 @@ void setup() {
   myServer.begin();
 
   pinMode(LED_PIN, OUTPUT);
+  pinMode(LED_SENSE, INPUT);
 
 }
 
 /*
  * Loop
+ * 
+ * where all the work happens
  */
 void loop() {
   
@@ -53,7 +59,6 @@ void loop() {
             nextClient.println("Connection: close");
             nextClient.println();
             nextClient.stop(); // disconnect from the client
-            //Serial.println("Client Disconnected");
           } else {
 
             // put one line of the request into clientRequest
@@ -64,12 +69,10 @@ void loop() {
             // values that we added to the url, such as "value=0" put
             // after the url in "192.168.x.x/value=0"
             if (clientRequest.startsWith("GET")) {
-              //Serial.println("Command Type: GET");
               String requestValue = clientRequest.substring(3);
               requestValue.trim();
               int HTTPIndex = requestValue.indexOf("HTTP/1.1");
               requestValue = requestValue.substring(1, HTTPIndex);
-              //Serial.println(requestValue);
               handleRequest(requestValue);
             }
             
@@ -89,6 +92,8 @@ void loop() {
 
 /*
  * Connect to WiFi
+ * 
+ * connect to a wireless network given the ssid and key of the network
  */
 void connectToWifi(String ssid, String key) {
   WiFi.begin(ssid, key);
@@ -102,6 +107,8 @@ void connectToWifi(String ssid, String key) {
 
 /*
  * Handle Request
+ * 
+ * process the http get request
  */
 void handleRequest(String request) {
   request.trim();
@@ -111,12 +118,16 @@ void handleRequest(String request) {
     changeLEDState(1);
   } else if (request.equals("off")) {
     changeLEDState(0);
+  } else if (request.equals("toggle")) {
+    toggleLED();
   }
   Serial.print("Command: "); Serial.println(request);
 }
 
 /*
  * Change LED State
+ * 
+ * Changes the led state to a given state
  */
 void changeLEDState(int state) {
   switch (state) {
@@ -126,5 +137,19 @@ void changeLEDState(int state) {
     case 1:
       digitalWrite(LED_PIN, HIGH);
       break;
+  }
+}
+
+/*
+ * Toggle LED
+ * 
+ * Reads the current state of the led and changes it to the opposite
+ */
+void toggleLED() {
+  float  ledState = digitalRead(LED_SENSE);
+  if (ledState >= 0.5) {
+    changeLEDState(0);
+  } else if (ledState < 0.5) {
+    changeLEDState(1);
   }
 }
